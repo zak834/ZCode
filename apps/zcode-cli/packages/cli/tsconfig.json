@@ -1,11 +1,18 @@
 {
   "compilerOptions": {
+    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
     "module": "NodeNext",
+    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
+    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
     "esModuleInterop": true,
+    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
     "strict": true,
+    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
     "skipLibCheck": true,
+    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
     "types": ["node"]
   },
+  // 类型检查覆盖 src 目录下的所有 TypeScript 文件
   "include": ["src/**/*"]
 }

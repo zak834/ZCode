@@ -1,10 +1,16 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 源码根目录为 src
     "rootDir": "src",
+    // 引入 @types/node：shared 里有依赖 Node 全局的工具（路径、进程等）
     "types": ["node"],
+    // 允许 .js 文件参与编译
     "allowJs": true
   },
+  // 只编译 src 目录
   "include": ["src"]
 }

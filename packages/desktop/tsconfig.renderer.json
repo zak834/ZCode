@@ -1,12 +1,19 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 产物输出到 out/renderer
     "outDir": "out/renderer",
+    // 源码根目录为 src/renderer
     "rootDir": "src/renderer",
+    // 浏览器环境类型：最新 ES 标准库 + DOM + DOM 迭代器（渲染进程运行 Chromium）
     "lib": ["es2025", "dom", "dom.iterable"],
+    // React 自动 JSX 转换
     "jsx": "react-jsx",
+    // 只做类型检查、不产出文件：实际打包由构建工具（如 electron-vite）完成
     "noEmit": true
   },
+  // 只检查 src/renderer 目录
   "include": ["src/renderer"],
   // renderer 直接 import 了 shared；把它补进 references，避免 renderer 单独检查时再走源码回退路径。
   "references": [{ "path": "../shared" }, { "path": "../ui" }, { "path": "../client" }]

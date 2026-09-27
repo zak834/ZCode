@@ -1,18 +1,33 @@
 {
+  // 编译器选项集合
   "compilerOptions": {
+    // 编译目标为 ES2024，生成的 JS 使用该版本的语法特性
     "target": "es2024",
+    // 引入 ES2024 标准库的类型定义（不含 DOM）
     "lib": ["es2024"],
+    // 代码组织为 ES 模块，按 Node.js Next 规范处理
     "module": "nodenext",
+    // 模块解析策略采用 Node.js Next 规范（支持 package.json exports）
     "moduleResolution": "nodenext",
+    // 编译时生成 .d.ts 类型声明文件
     "declaration": true,
+    // 为声明文件生成 .d.ts.map，支持跳转到原始 TS 源码
     "declarationMap": true,
+    // 生成 sourceMap，便于调试时映射回源码
     "sourceMap": true,
+    // 启用项目引用的增量编译，生成 .tsbuildinfo 缓存
     "composite": true,
+    // 允许以 ES 模块方式导入 CommonJS 模块（默认导出互操作）
     "esModuleInterop": true,
+    // 支持直接 import JSON 文件
     "resolveJsonModule": true,
+    // 跳过所有第三方 .d.ts 的类型检查，加快编译速度
     "skipLibCheck": true,
+    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
     "verbatimModuleSyntax": true,
+    // 要求所有文件都是 ES 模块，确保可被单文件转译工具（如 esbuild）安全处理
     "isolatedModules": true,
+    // 索引访问默认视为可能为 undefined，强制进行空值检查
     "noUncheckedIndexedAccess": true
   }
 }

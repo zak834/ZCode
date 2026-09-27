@@ -1,14 +1,25 @@
 {
+  // 独立的构建配置，不继承 tsconfig.base.json：由构建脚本单独指定本文件使用
   "compilerOptions": {
+    // 产物按 ES2022 语法标准输出
     "target": "ES2022",
+    // 可用的标准库 API 类型
     "lib": ["ES2022"],
+    // 产物组织为 ES 模块，按 Node.js Next 规范处理
     "module": "nodenext",
+    // 模块解析同样采用 Node.js Next 规则
     "moduleResolution": "nodenext",
+    // ESM 与 CommonJS 导入互操作
     "esModuleInterop": true,
+    // 支持直接 import JSON 文件
     "resolveJsonModule": true,
+    // 跳过第三方声明文件检查，加快构建
     "skipLibCheck": true,
+    // 类型导入必须显式写 import type
     "verbatimModuleSyntax": true,
+    // 每个文件必须能被单独转译
     "isolatedModules": true
   },
+  // 编译 src 目录
   "include": ["src"]
 }

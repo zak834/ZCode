@@ -1,11 +1,18 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 可用类型：ES2024 标准库 + DOM + DOM 迭代器
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    // 产物组织为最新版 ES 模块语法
     "module": "ESNext",
+    // 用打包器规则解析模块，配合 Vite 的解析方式
     "moduleResolution": "Bundler",
+    // 引入 Vite 客户端类型（import.meta.env、资源导入等）
     "types": ["vite/client"],
+    // 只做类型检查、不产出文件：实际打包由 Vite 完成
     "noEmit": true
   },
+  // 检查 src 目录和 Vite 配置文件
   "include": ["src", "vite.config.ts"]
 }

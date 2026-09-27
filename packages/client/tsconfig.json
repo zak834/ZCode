@@ -1,10 +1,15 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 源码根目录为 src
     "rootDir": "src",
+    // 可用类型：最新 ES 标准库 + DOM（client 在浏览器与 Node 两端都能用）
     "lib": ["es2025", "dom", "dom.iterable"]
   },
+  // 只编译 src 目录
   "include": ["src"],
   // client 直接依赖 rpc，如果不显式引用 rpc project，typecheck 会顺着 workspace 包入口重新编译 rpc 源码。
   // 补 references 后，client 会优先读取 rpc 已生成的声明文件。

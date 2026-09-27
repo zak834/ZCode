@@ -1,3 +1,4 @@
+// 从会话历史里挑选要回放给模型的"工具 part"：同一调用只保留最新一条记录。
 import type { ToolPart } from "@zcode/contracts";
 
 export function selectToolPartsForHistory(parts: ToolPart[]): ToolPart[] {

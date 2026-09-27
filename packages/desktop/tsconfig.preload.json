@@ -1,10 +1,16 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 产物输出到 out/preload
     "outDir": "out/preload",
+    // 源码根目录为 src（preload 还引用了 src/shared 下的桥接文件，根目录必须覆盖两者）
     "rootDir": "src",
+    // ES2025 + DOM 类型：preload 运行在类浏览器的渲染进程环境
     "lib": ["es2025", "dom"]
   },
+  // 编译 preload 目录，外加 src/shared 下的监控桥接转发文件
   "include": ["src/preload", "src/shared/armsRumBridgeForward.ts"],
+  // 工程引用：复用 shared 的声明产物
   "references": [{ "path": "../shared" }]
 }

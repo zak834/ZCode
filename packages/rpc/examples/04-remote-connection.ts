@@ -49,6 +49,7 @@ import {
 // 模拟的 Socket 实现（内存中的双向通道）
 // ============================================================================
 
+// 内存版的"网线"：实现 ISocket 接口，但对端不是真实网络而是另一个 MockSocket。
 class MockSocket implements ISocket {
   private _onData = new Emitter<VSBuffer>();
   private _onClose = new Emitter<void>();
@@ -58,8 +59,10 @@ class MockSocket implements ISocket {
   readonly onClose = this._onClose.event;
   readonly onEnd = this._onEnd.event;
 
+  // 对端引用：我 write 的数据要 fire 到它那里。
   private peer: MockSocket | null = null;
 
+  // 静态工厂（同 VSBuffer 的写法）：造一对互联的 socket，元组返回 + 解构使用。
   static createPair(): [MockSocket, MockSocket] {
     const a = new MockSocket();
     const b = new MockSocket();
@@ -70,6 +73,7 @@ class MockSocket implements ISocket {
 
   write(buffer: VSBuffer): void {
     // 模拟网络延迟
+    // `this.peer?.`：对端可能已断开置空，可选链防炸。
     setTimeout(() => {
       this.peer?._onData.fire(buffer);
     }, 1);
@@ -104,12 +108,14 @@ class MockSocket implements ISocket {
  */
 class SSHAuthorityResolver implements IRemoteAuthorityResolver {
   // 模拟的 SSH 主机配置
+  // Record<string, {...}> 是 TS 内置工具类型：读作"键为字符串、值为该对象形状"的字典。
   private hosts: Record<string, { host: string; port: number }> = {
     "ssh+myserver": { host: "192.168.1.100", port: 8080 },
     "ssh+devbox": { host: "10.0.0.50", port: 8080 },
   };
 
   async resolve(authority: string): Promise<ResolvedAuthority> {
+    // 按名字查"hosts 表"——真实实现里这里是解析 SSH config / 建隧道。
     const config = this.hosts[authority];
     if (!config) {
       throw new Error(`Unknown SSH host: ${authority}`);
@@ -132,8 +138,10 @@ class SSHAuthorityResolver implements IRemoteAuthorityResolver {
 /** 保存"服务端"的 socket 引用，模拟网络连接 */
 const pendingServerSockets: MockSocket[] = [];
 
+// 泛型实参 <WebSocket> 收窄了工厂类型：connectTo 在类型层面就是 WebSocket 连接。
 class MockWebSocketFactory implements ISocketFactory<RemoteConnectionType.WebSocket> {
   supports(connectTo: RemoteConnection & { type: RemoteConnectionType.WebSocket }): boolean {
+    // 演示工厂：来者不拒。
     return true;
   }
 
@@ -146,6 +154,7 @@ class MockWebSocketFactory implements ISocketFactory<RemoteConnectionType.WebSoc
       `  [Socket Factory] Connecting to ${connectTo.host}:${connectTo.port}${path}?${query}`,
     );
 
+    // 造一对互联的 socket：客户端拿走一个，另一个当"远端"存起来。
     const [clientSocket, serverSocket] = MockSocket.createPair();
     pendingServerSockets.push(serverSocket);
     return clientSocket;
@@ -156,6 +165,7 @@ class MockWebSocketFactory implements ISocketFactory<RemoteConnectionType.WebSoc
 // 模拟远端服务
 // ============================================================================
 
+// 远端文件服务的接口与实现（与示例 2 的文件服务同款思路，多了 stat 方法）。
 interface IRemoteFileService {
   onDidChangeFile: Event<{ path: string; type: string }>;
   readFile(path: string): Promise<string>;
@@ -164,6 +174,7 @@ interface IRemoteFileService {
 }
 
 class RemoteFileServiceImpl implements IRemoteFileService {
+  // Map 支持构造时批量初始化：传入"键值对数组"（每个元素本身是 [键, 值] 的小数组）。
   private files = new Map<string, string>([
     ["/home/user/project/main.ts", 'console.log("Hello from remote!")'],
     ["/home/user/project/package.json", '{"name": "my-project", "version": "1.0.0"}'],
@@ -207,6 +218,8 @@ async function main() {
 
   console.log("[1] Setting up Remote infrastructure...");
 
+  // 两张"注册表"：ssh 类型的 authority 由谁解析、WebSocket 类型的连接由谁建立——
+  // 这就是 VS Code 远程扩展机制的最小模型。
   const resolverService = new RemoteAuthorityResolverService();
   resolverService.registerResolver("ssh", new SSHAuthorityResolver());
 
@@ -229,6 +242,7 @@ async function main() {
   );
 
   // 获取模拟的服务端 socket
+  // pop() 取出刚存进去的那个；`!` 非空断言：演示流程保证一定有。
   const serverSocket = pendingServerSockets.pop()!;
 
   // ──────── 4. 服务端设置 ────────
@@ -239,6 +253,7 @@ async function main() {
   // 在真实场景中，这里会有完整的握手、认证流程
 
   // 创建简单的 protocol（不用 PersistentProtocol 以简化演示）
+  // 这对对象字面量协议与 createQueuePair 同构：A 发 → B 收，B 发 → A 收。
   const serverOnMsg = new Emitter<VSBuffer>();
   const clientOnMsg = new Emitter<VSBuffer>();
 
@@ -295,6 +310,7 @@ async function main() {
 
   console.log("\n[6] URI Transformation...");
 
+  // URI 转换器与上面的 RPC 链路相互独立，是远程方案的另一半：路径的"翻译官"。
   const transformer = createURITransformer("ssh+myserver");
 
   const remoteURI = {

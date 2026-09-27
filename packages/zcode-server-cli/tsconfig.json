@@ -1,11 +1,18 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 源码根目录：只有 src 下的文件会被编译
     "rootDir": "src",
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 可用的全局 API 类型：ES2022 标准库 + 浏览器 DOM
     "lib": ["ES2022", "DOM"],
+    // 额外引入 @types/node 的 Node.js 全局类型
     "types": ["node"]
   },
+  // 只编译 src 目录
   "include": ["src"],
+  // 工程引用：typecheck 时先构建这三个依赖包，直接消费它们的 .d.ts 声明产物
   "references": [{ "path": "../shared" }, { "path": "../rpc" }, { "path": "../services" }]
 }

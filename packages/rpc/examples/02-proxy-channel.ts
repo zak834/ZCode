@@ -22,7 +22,9 @@ import {
 // ============================================================================
 
 /** 文件系统服务接口 */
+// 纯接口：描述"一个文件服务长什么样"。客户端只依赖它，完全不关心远端实现。
 interface IFileService {
+  // 属性形式的事件 + 方法形式的操作——ProxyChannel 正是按这个形状自动分派的。
   onDidChangeFile: Event<{ path: string; type: string }>;
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
@@ -30,6 +32,7 @@ interface IFileService {
 }
 
 /** 模拟的文件系统实现 */
+// 内存版（不碰真实磁盘，方便演示）：Map 当文件系统用，键=路径，值=内容。
 class InMemoryFileService implements IFileService {
   private files = new Map<string, string>();
   private readonly _onDidChangeFile = new Emitter<{ path: string; type: string }>();
@@ -44,6 +47,7 @@ class InMemoryFileService implements IFileService {
   }
 
   async writeFile(path: string, content: string): Promise<void> {
+    // 先记住是新建还是修改（has 判断键是否存在），写完按情况广播事件。
     const isNew = !this.files.has(path);
     this.files.set(path, content);
     this._onDidChangeFile.fire({
@@ -53,6 +57,7 @@ class InMemoryFileService implements IFileService {
   }
 
   async listFiles(dir: string): Promise<string[]> {
+    // 展开所有键成数组，再 filter 过滤出以 dir 开头的路径（startsWith 前缀匹配）。
     return [...this.files.keys()].filter((p) => p.startsWith(dir));
   }
 }
@@ -83,6 +88,7 @@ async function main() {
 
   // 一行代码：把 channel 恢复为类型安全的 service！
   // 利用 ES6 Proxy，调用 remoteFS.readFile(...) 会自动变成 channel.call('readFile', [...])
+  // 泛型 <IFileService> 就是"恢复出来的形状"——之后 IDE 补全和类型检查全部可用。
   const remoteFS = ProxyChannel.toService<IFileService>(client.getChannel("fileService"));
 
   // ========== 使用远程服务（就像调本地方法一样！）==========
@@ -90,11 +96,13 @@ async function main() {
   console.log("（注意：所有调用都经过了序列化 → 传输 → 反序列化）\n");
 
   // 监听文件变更事件
+  // 看似访问了"属性"——其实是 Proxy 陷阱把 onDidChangeFile 翻译成了 channel.listen(...)。
   const eventDisposable = remoteFS.onDidChangeFile((e) => {
     console.log(`  [file event] ${e.type}: ${e.path}`);
   });
 
   // 写入文件
+  // 同样是假象：writeFile 属性被陷阱换成了 async 函数，调用即发起 RPC。
   await remoteFS.writeFile("/src/main.ts", 'console.log("hello")');
   await remoteFS.writeFile("/src/util.ts", "export function add(a, b) { return a + b; }");
   await remoteFS.writeFile("/src/main.ts", 'console.log("hello world")'); // 修改

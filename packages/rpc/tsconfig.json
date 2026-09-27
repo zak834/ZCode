@@ -2,21 +2,34 @@
   // 这里改成 composite project，是因为之前 consumers 会顺着 package export 直接把 rpc 源码拖进来重复检查。
   // 改成可被 project references 消费的独立工程后，typecheck 会优先复用 rpc 自己生成的声明产物，避免同一批错误被放大打印。
   "compilerOptions": {
+    // 产物按 ES2022 语法标准输出
     "target": "ES2022",
+    // 产物组织为 ES2022 模块
     "module": "ES2022",
+    // 用打包器（bundler）规则解析模块，导入可省略扩展名
     "moduleResolution": "bundler",
+    // 产物输出到 dist 目录
     "outDir": "./dist",
+    // 源码根目录为 src
     "rootDir": "./src",
+    // 开启全套严格类型检查
     "strict": true,
+    // ESM 与 CommonJS 导入互操作
     "esModuleInterop": true,
+    // 生成 .d.ts 类型声明
     "declaration": true,
+    // 为声明生成映射，支持跳转回源码
     "declarationMap": true,
+    // 生成 sourceMap 便于调试
     "sourceMap": true,
+    // 允许被工程引用，启用增量编译
     "composite": true,
     // 修复原因：rrweb 传递依赖的旧 @types/css-font-loading-module 会和新版 TypeScript 内置 DOM 声明重复。
     // rpc 没继承根 tsconfig，之前没有跳过第三方声明检查，导致 bootstrap 在依赖类型冲突上失败。
     "skipLibCheck": true,
+    // 同时提供 Node 与浏览器的标准库类型（rpc 两端都会用到）
     "lib": ["ES2022", "DOM"]
   },
+  // 编译 src 下的所有 .ts 文件
   "include": ["src/**/*.ts"]
 }

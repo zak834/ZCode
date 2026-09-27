@@ -26,6 +26,7 @@ import {
 // ============================================================================
 
 /** 服务端提供的全局配置服务 */
+// 所有客户端共享同一份配置：谁 set 了，别的客户端 get 就能读到（见下面的演示）。
 class ConfigService {
   private config = new Map<string, any>();
   private readonly _onDidChange = new Emitter<{ key: string; value: any }>();
@@ -37,11 +38,13 @@ class ConfigService {
 
   async set(key: string, value: any): Promise<void> {
     this.config.set(key, value);
+    // 对象字面量键名省略：{ key, value } 等价 { key: key, value: value }。
     this._onDidChange.fire({ key, value });
   }
 }
 
 /** 客户端提供的窗口信息服务 */
+// 注意方向：这个服务注册在**客户端**上，等会儿服务端会反过来调它。
 class WindowInfoService {
   constructor(private windowId: string) {}
 
@@ -66,6 +69,7 @@ async function main() {
   // ========== 创建 IPCServer ==========
 
   // IPCServer 通过 onDidClientConnect 事件接收新连接
+  // 演示环境里我们自己造这个事件——真实场景由 Electron/Socket 的 accept 逻辑来 fire。
   const serverEmitter = new Emitter<ClientConnectionEvent>();
   const server = new IPCServer<string>(serverEmitter.event);
 
@@ -76,11 +80,14 @@ async function main() {
   // ========== 客户端 1 连接 ==========
   console.log('[1] Client "window-1" connecting...');
 
+  // 一对内存管道：a 端给客户端用，b 端交给服务端（下面 fire 出去）。
   const [proto1a, proto1b] = createQueuePair();
   const disconnectEmitter1 = new Emitter<void>();
 
   // 模拟客户端连接到服务端
+  // "连接建立" = 把一条协议管道 + 断开事件递给 IPCServer。
   serverEmitter.fire({ protocol: proto1b, onDidClientDisconnect: disconnectEmitter1.event });
+  // 第二个参数是身份标识：IPCClient 构造时会把它作为第一条消息发给服务端。
   const client1 = new IPCClient(proto1a, "window-1");
 
   // 客户端注册自己的服务（供服务端反向调用）
@@ -103,11 +110,13 @@ async function main() {
   );
 
   // 等待连接建立
+  // 定时"睡 50ms"：给两条连接的握手消息（ctx + Initialize）留出异步完成的时间。
   await new Promise((r) => setTimeout(r, 50));
 
   // ========== 客户端调用服务端 ==========
   console.log("\n[3] Clients calling server...");
 
+  // 泛型直接写了实现类 ConfigService：只要形状匹配就能当接口用（结构化类型的便利）。
   const remoteConfig1 = ProxyChannel.toService<ConfigService>(client1.getChannel("config"));
 
   await remoteConfig1.set("theme", "dark");
@@ -122,6 +131,7 @@ async function main() {
   console.log("\n[4] Server calling clients (reverse IPC)...");
 
   // 用 StaticRouter 选择 window-1
+  // 服务端反向调用：按路由策略挑出 ctx === "window-1" 的那条连接。
   const window1Channel = server.getChannel<IChannel>(
     "windowInfo",
     new StaticRouter((ctx) => ctx === "window-1"),
@@ -131,6 +141,7 @@ async function main() {
   console.log(`  server → window-1: title = "${title1}"`);
 
   // 用 filter 选择 window-2
+  // 更轻的写法：直接给过滤函数（ipc.ts 的 getChannel 讲过这两种形态）。
   const window2Channel = server.getChannel<IChannel>(
     "windowInfo",
     (client) => client.ctx === "window-2",
@@ -147,6 +158,7 @@ async function main() {
 
   // ========== 模拟客户端断开 ==========
   console.log('\n[6] Client "window-1" disconnecting...');
+  // 触发断开事件——IPCServer 里注册的清理逻辑会销毁该连接的双向通道并把它移出列表。
   disconnectEmitter1.fire();
   await new Promise((r) => setTimeout(r, 10));
 

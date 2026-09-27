@@ -1,11 +1,17 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 源码根目录为 src
     "rootDir": "src",
+    // 可用的标准库 API 类型按 ES2025 提供
     "lib": ["es2025"],
+    // 引入 @types/node 的 Node.js 全局类型
     "types": ["node"]
   },
+  // 只编译 src 目录
   "include": ["src"],
   // 之前没声明对 rpc 的工程引用，tsc 会把 rpc 当普通源码依赖重复检查，导致错误在多个消费者里反复出现。
   // 这里补上 references，让 services 直接消费 rpc 的声明产物。

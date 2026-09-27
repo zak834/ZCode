@@ -1,24 +1,44 @@
 {
+  // JSON Schema 声明：让编辑器/工具按 draft-07 规范校验本文件格式
   "$schema": "https://json-schema.org/draft-07/schema#",
   "compilerOptions": {
+    // 允许用「默认导入」的写法引用 CommonJS 模块（类型层面不做报错）
     "allowSyntheticDefaultImports": true,
+    // 为每个源文件生成对应的 .d.ts 类型声明文件
     "declaration": true,
+    // 生成 .d.ts.map，让编辑器能从声明文件跳转回 TypeScript 源码
     "declarationMap": true,
+    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
     "esModuleInterop": true,
+    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
     "forceConsistentCasingInFileNames": true,
+    // 保证每个文件可被独立转译（与 esbuild/swc 等单文件转译器兼容，禁用易跨文件耦合的写法）
     "isolatedModules": true,
+    // 可用的标准库 API 类型按 ES2024 提供
     "lib": ["ES2024"],
+    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
     "module": "NodeNext",
+    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
+    // 显式允许真实产出编译文件（不设 noEmit，构建时输出 JS）
     "noEmit": false,
+    // 禁止 switch 中贯穿到下一个 case（漏写 break 即报错）
     "noFallthroughCasesInSwitch": true,
+    // 子类重写父类方法时必须显式写 override 关键字
     "noImplicitOverride": true,
+    // 索引访问（obj[key]、arr[i]）默认带 undefined，强制判空后再使用
     "noUncheckedIndexedAccess": true,
+    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译并规避第三方声明冲突
     "skipLibCheck": true,
+    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
     "strict": true,
+    // 编译产物的 JS 语法级别为 ES2024
     "target": "ES2024",
+    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
     "types": ["node"],
+    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
     "verbatimModuleSyntax": true
   },
+  // 只把 tsconfig.json 自身列入文件集合：本工程不直接编译源码，仅作为编译选项的配置载体供工具读取
   "include": ["tsconfig.json"]
 }

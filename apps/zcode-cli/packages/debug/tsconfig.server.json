@@ -1,24 +1,44 @@
 {
   "compilerOptions": {
+    // 允许用「默认导入」的写法引用只有具名导出的模块（类型层面不做报错）
     "allowSyntheticDefaultImports": true,
+    // 不生成 .d.ts 类型声明（服务端产物只自用，不对外提供类型）
     "declaration": false,
+    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
     "esModuleInterop": true,
+    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
     "forceConsistentCasingInFileNames": true,
+    // 保证每个文件可被独立转译（与 esbuild/swc 等单文件转译器兼容）
     "isolatedModules": true,
+    // 可用的标准库 API 类型按 ES2024 提供
     "lib": ["ES2024"],
+    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
     "module": "NodeNext",
+    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
+    // 显式允许真实产出编译文件（与调试面板的 noEmit 配置区分开）
     "noEmit": false,
+    // 禁止 switch 中贯穿到下一个 case（漏写 break 即报错）
     "noFallthroughCasesInSwitch": true,
+    // 子类重写父类方法时必须显式写 override 关键字
     "noImplicitOverride": true,
+    // 索引访问（obj[key]、arr[i]）默认带 undefined，强制判空后再使用
     "noUncheckedIndexedAccess": true,
+    // 编译产物输出到 dist-server 目录（与调试面板的 dist 产物分开）
     "outDir": "dist-server",
+    // 源码根目录为包根目录（因为同时编译 server/、scripts/ 两个顶层目录）
     "rootDir": ".",
+    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
     "skipLibCheck": true,
+    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
     "strict": true,
+    // 编译产物的 JS 语法级别为 ES2024
     "target": "ES2024",
+    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
     "types": ["node"],
+    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
     "verbatimModuleSyntax": true
   },
+  // 只编译 server 目录、scripts 目录和 src/shared.ts（面板与服务端共享的类型部分）
   "include": ["server", "scripts", "src/shared.ts"]
 }

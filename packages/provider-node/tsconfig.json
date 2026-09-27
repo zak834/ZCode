@@ -1,11 +1,18 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 源码根目录为 src
     "rootDir": "src",
+    // 可用的标准库 API 类型按 ES2025 提供
     "lib": ["ES2025"],
+    // 开启全套严格类型检查
     "strict": true,
+    // 引入 @types/node 的 Node.js 全局类型（provider-node 运行在 Node 端）
     "types": ["node"]
   },
+  // 只编译 src 目录
   "include": ["src"]
 }

@@ -1,12 +1,20 @@
 {
+  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 编译产物输出到 dist 目录
     "outDir": "dist",
+    // 源码根目录为 src
     "rootDir": "src",
+    // 浏览器环境类型：最新 ES 标准库 + DOM + DOM 迭代器（NodeList 等可迭代）
     "lib": ["es2025", "dom", "dom.iterable"],
+    // React 17+ 自动 JSX 转换，组件里无需再 import React
     "jsx": "react-jsx",
+    // 只做类型检查、不产出文件：实际打包由 Vite 完成
     "noEmit": true
   },
+  // 只检查 src 目录
   "include": ["src"],
+  // 工程引用：web 依赖 ui（组件）与 client（Agent 客户端 SDK）两个包
   "references": [{ "path": "../ui" }, { "path": "../client" }]
 }

@@ -1,10 +1,17 @@
 {
+  // 本文件不编译任何文件，仅作为「解决方案入口」聚合桌面端的 5 个子工程
   "files": [],
+  // 工程引用列表：`tsc -b`（pnpm typecheck）会按依赖顺序依次构建这些子工程
   "references": [
+    // Electron 主进程：窗口、原生操作、进程调度与消息转发
     { "path": "./tsconfig.main.json" },
+    // Local Host：Agent 会话运行时的宿主进程
     { "path": "./tsconfig.host.json" },
+    // 调度器：子进程调度相关逻辑
     { "path": "./tsconfig.scheduler.json" },
+    // 预加载脚本：渲染进程与主进程之间的安全桥
     { "path": "./tsconfig.preload.json" },
+    // 渲染进程：React 界面
     { "path": "./tsconfig.renderer.json" }
   ]
 }
