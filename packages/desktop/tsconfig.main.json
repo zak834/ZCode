@@ -1,15 +1,19 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // Electron 主进程子工程。主进程是 Node.js 环境，负责窗口、原生操作、
+  // 进程调度和消息转发，不承载页面 UI。继承根基座。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 产物输出到 out/main
+    // 产物输出到 out/main（Electron 各子工程产物统一放 out/ 下按角色分目录）。
     "outDir": "out/main",
-    // 源码根目录为 src/main
+    // 源码根目录为 src/main；产物中剥去该前缀。
     "rootDir": "src/main",
-    // 可用的标准库 API 类型按 ES2025 提供（主进程是纯 Node 环境）
+    // lib 覆盖基座为 ES2025。主进程是纯 Node 环境，不加 DOM 类型
+    // （window/document 在主进程本来就不存在，加上反而会掩盖误用）。
     "lib": ["es2025"]
   },
-  // 只编译 src/main 目录
+  // 只编译 src/main 目录，UI 代码不会混入主进程产物。
   "include": ["src/main"],
   // main 直接依赖 shared 和 services；把引用补齐后，desktop 子工程也能稳定复用上游声明产物。
   "references": [{ "path": "../shared" }, { "path": "../services" }]

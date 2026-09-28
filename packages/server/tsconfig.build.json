@@ -1,25 +1,37 @@
 {
-  // 独立的构建配置，不继承 tsconfig.base.json：由构建脚本单独指定本文件使用
+  // ============================================================================
+  // 本文件是 server 包专用的【发版构建配置】，刻意【不继承】基座：
+  // 构建脚本会用 tsc -p tsconfig.build.json 显式指定它。与同目录 tsconfig.json
+  // （日常类型检查用，继承基座）分开，是为了让构建产物的选项独立可控，
+  // 不受基座增量检查类选项（如 composite）影响。
+  // ============================================================================
   "compilerOptions": {
-    // 产物按 ES2022 语法标准输出
+    // --- 产物语法与可用标准库 ---
+    // target：产物 JS 语法级别为 ES2022，匹配生产 Node 运行时支持范围。
     "target": "ES2022",
-    // 可用的标准库 API 类型
+    // lib：按 ES2022 提供 Promise、Array 新方法等内置 API 的类型。
     "lib": ["ES2022"],
-    // 产物组织为 ES 模块，按 Node.js Next 规范处理
+    // --- 模块系统 ---
+    // module：产物按 Node.js 最新 ESM/CommonJS 规则组织（随 package.json type 决定）。
     "module": "nodenext",
-    // 模块解析同样采用 Node.js Next 规则
+    // moduleResolution：模块查找完全模拟 Node 规则（含 package.json exports），
+    // 与 module 配套，必须同时设为 nodenext。
     "moduleResolution": "nodenext",
-    // ESM 与 CommonJS 导入互操作
+    // --- 互操作与文件导入 ---
+    // esModuleInterop：允许用 import x from 'cjs-pkg' 自然导入 CommonJS 包，
+    // 编译器补齐 default 互操作辅助代码，否则只能写 import * as x。
     "esModuleInterop": true,
-    // 支持直接 import JSON 文件
+    // resolveJsonModule：允许 import data from './x.json' 并按内容推导类型。
     "resolveJsonModule": true,
-    // 跳过第三方声明文件检查，加快构建
+    // --- 速度与转译约束 ---
+    // skipLibCheck：不检查 node_modules 内第三方 .d.ts，规避冲突、加快构建。
     "skipLibCheck": true,
-    // 类型导入必须显式写 import type
+    // verbatimModuleSyntax：类型导入必须写 import type，保证与单文件转译器行为一致。
     "verbatimModuleSyntax": true,
-    // 每个文件必须能被单独转译
+    // isolatedModules：禁止必须跨文件分析才能正确翻译的写法（如 re-export 类型
+    // 必须写 export type），保证每个文件可被独立转译。
     "isolatedModules": true
   },
-  // 编译 src 目录
+  // 构建输入为 src 目录。
   "include": ["src"]
 }

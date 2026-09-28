@@ -1,15 +1,20 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 client 包（Agent 客户端 SDK，同构运行于浏览器与 Node）的 TS 配置。
+  // 继承根基座，这里只写本包覆盖项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // 编译产物输出到 dist。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src。
     "rootDir": "src",
-    // 可用类型：最新 ES 标准库 + DOM（client 在浏览器与 Node 两端都能用）
+    // lib 覆盖基座：ES2025 标准库 + DOM + 可迭代 DOM 集合。
+    // SDK 在 Web 页面里会用到 fetch/ReadableStream 等浏览器 API 类型，
+    // 在 Node 端使用时这部分类型只是「不可调用」，不影响类型检查。
     "lib": ["es2025", "dom", "dom.iterable"]
   },
-  // 只编译 src 目录
+  // 只编译 src 目录。
   "include": ["src"],
   // client 直接依赖 rpc，如果不显式引用 rpc project，typecheck 会顺着 workspace 包入口重新编译 rpc 源码。
   // 补 references 后，client 会优先读取 rpc 已生成的声明文件。

@@ -1,6 +1,6 @@
 # 01 · TypeScript 预备章
 
-> 本章你将学到：TypeScript 和 JavaScript 的关系；`tsconfig.json` 在 TS 里起什么作用、本仓库 `tsconfig.base.json` 每个选项是什么意思；monorepo 里包和包怎么互相引用；以及本项目代码里最高频的几个 TS 概念——`import type`、interface、泛型、zod。
+> 本章你将学到：TypeScript 和 JavaScript 的关系；`tsconfig.json` 在 TS 里起什么作用、本仓库 `tsconfig.base.json` 每个选项是什么意思、**基座之外各包出现的全部配置项**（`strict`、`jsx`、`noEmit`、`paths` 等），以及**全仓库 38 份 tsconfig 的角色总览**；monorepo 里包和包怎么互相引用；以及本项目代码里最高频的几个 TS 概念——`import type`、interface、泛型、zod。
 >
 > 所有例子都来自本仓库的真实代码，读完你就能无障碍开始读项目源码。
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 2. 本仓库的 tsconfig.base.json 逐项解读
+## 2. tsconfig 逐项解读：从基座到全仓库 38 份配置
 
 ### tsconfig.json 在 TypeScript 中的作用
 
@@ -62,6 +62,128 @@ monorepo 只有一份 tsconfig 不够：30+ 个包要各自指定 `include` 和�
 > import { AgentRuntime } from "./runtime/agent-runtime.js";
 > ```
 > 因为编译后 `runtime.ts` 会变成 `runtime.js`，Node 直接运行编译产物时按你写的路径找文件——写 `.ts` 运行时就找不到了。
+
+### 2.1 基座之外：各包出现的全部配置项
+
+基座的 14 个选项是「公共校规」，但各包还有「本班补充规定」。下面把**其余 37 份配置里出现过的每一个选项**讲透。每份 tsconfig 里的中文注释也是按这套解释写的，可以对照阅读。
+
+#### A. 顶层字段（不放在 `compilerOptions` 里）
+
+| 字段 | 作用 | 本仓库示例 |
+| --- | --- | --- |
+| `extends` | 继承另一份 tsconfig，父配置的选项全部生效，本文件只写要覆盖的差异 | 主 workspace 的包几乎都写 `"extends": "../../tsconfig.base.json"` |
+| `include` | 圈定哪些文件属于本工程（目录或 glob，如 `["src/**/*.ts"]`） | 几乎每个包都有 |
+| `exclude` | 从工程里排除文件（依赖、产物、测试最常见） | `["node_modules", "dist", "**/*.test.ts"]`（core 包排除测试文件） |
+| `files` | 逐个点名要编译的文件；给空数组 `[]` 表示「本工程不含源码，只做聚合」 | desktop 的解决方案入口 `files: []` + 5 个 references |
+| `references` | 声明依赖的其他 TS 工程；`tsc -b` 先构建被引用方，本工程直接读它的 `.d.ts`，不把对方源码拖进来重复检查 | 如 client 引用 `../rpc`、`../services` |
+| `$schema` | 给编辑器看的 JSON 结构说明书地址，只影响自动补全/校验提示，不影响编译 | 仅 `apps/zcode-cli/tools/typescript/tsconfig.json` 写了 |
+
+> 💡 **为什么 references 这么重要**：不写它，tsc 发现你 import 了别的包，会顺着包入口把对方的 **.ts 源码**当自己的输入重新检查一遍——同一批错误在每个消费方都打印一次，还可能因为两个包的编译选项不同而给出矛盾结果。写了 references，消费方只读对方已生成的 `.d.ts`，快且一致。仓库里 rpc 包相关的 references 修复注释记录的就是这个坑。
+
+#### B. 目录与产物
+
+| 选项 | 取值 | 小白解释 |
+| --- | --- | --- |
+| `rootDir` | `src` / `.` | **源码的根目录**。产物会剥掉这个前缀：`src/a/x.ts` → `dist/a/x.js`。所有被编译文件必须在它之下，否则报错。debug 服务端配置因为输入横跨 `server/`、`scripts/`、`src/shared.ts`，根只能设为包根 `.` |
+| `outDir` | `dist` / `out/main` / `dist-types` / `dist-server` | **产物输出目录**。desktop 五个子工程分别输出到 `out/main`、`out/host` 等避免互相覆盖；纯类型包用 `dist-types`；debug 面板与服务端用 `dist` 与 `dist-server` 分开 |
+| `noEmit` | `true` / `false` | `true` = tsc **只查错、不产出任何文件**。浏览器端包（web、renderer、formal-proof、debug 面板）都开它，因为 JS 由 Vite/electron-vite 打包，tsc 再产物只会重复覆盖 |
+| `emitDeclarationOnly` | `true` | **只产 `.d.ts` 声明、不产 JS**。纯类型/契约包（shared-types、contracts、browser-use-plugin）使用，它们的运行时代码由消费方打包带走 |
+| `declaration` | `false` | 基座默认 `true`（库要对外暴露类型）；debug 的服务端配置显式设 `false`——产物只给自己运行，不需要声明文件 |
+
+#### C. 类型环境：让 tsc 认识「你在什么世界写代码」
+
+| 选项 | 取值 | 小白解释 |
+| --- | --- | --- |
+| `types` | `["node"]` | **显式点名加载哪些全局类型包**。写了它，TS 才认识 `process`、`Buffer`、`__dirname`。一旦显式写了 types，其他 `@types/*` 就不会被自动全局加载 |
+| `types` | `["vite/client"]` | Vite 客户端专属类型：`import.meta.env.DEV`、`import logo from './logo.svg'` 这类资源导入。formal-proof 和 debug 面板使用 |
+| `types` | `["node", "electron"]` | 额外获得 `Electron` 命名空间类型（如 `Electron.MessageEvent`）。desktop scheduler 使用 |
+| `jsx` | `react-jsx` | 告诉 tsc 怎么理解 `.tsx` 里的 `<div/>`。`react-jsx` 是 React 17+ 自动转换，**不用再写 `import React`**。web、ui、renderer、tui、debug 面板使用 |
+| `allowJs` | `true` | 允许把 `.js` 文件纳入编译/检查（默认只认 `.ts/.tsx`）。shared 包有历史 JS 工具文件，故开启 |
+| `paths` | `{"@/*": ["./src/*"]}` | **路径别名**：`import x from '@/hooks/useX'` 等价于 `./src/hooks/useX`，省去 `../../..`。只影响 TS 解析，Vite 侧需配等价别名（两边要同步）。仅 ui 包使用 |
+
+`lib` 在基座里是 `["es2024"]`，各包按运行环境覆盖，三种典型组合：
+
+- **纯 Node**（services、provider-node、desktop main/host/scheduler）：只有 `es2025`，不加 DOM——主进程里本来就没有 `window`，加上反而会掩盖误用；
+- **浏览器/渲染端**（web、ui、renderer、client、formal-proof）：`es2025`/`es2024` + `dom` + `dom.iterable`。`dom.iterable` 让 `document.querySelectorAll()` 的结果能 `for...of`；
+- **同构库**（rpc、provider、zcode-server-cli）：ES 标准库 + DOM 都给，因为同一份代码两端都可能跑。
+
+#### D. 严格检查与编码规则
+
+| 选项 | 小白解释 | 典型报错场景 |
+| --- | --- | --- |
+| `strict` | **一键开启全部严格检查**的总开关：`noImplicitAny`（参数不标类型且推断不出时报错）、`strictNullChecks`（`null/undefined` 不能直接当字符串用）等。基座没统一开，provider、rpc 及 apps/zcode-cli 下大多数包自行开启 | 函数参数忘了类型 → 隐式 any 报错 |
+| `forceConsistentCasingInFileNames` | import 路径大小写必须和磁盘文件名**完全一致**。Windows/macOS 文件系统不区分大小写，Linux 区分——不打开会出现「本地能跑、CI 找不到模块」 | `import './Utils'` 而文件叫 `utils.ts` |
+| `noFallthroughCasesInSwitch` | `switch` 的 `case` 漏写 `break` 贯穿到下一个分支时报错 | 漏 break 导致多个 case 连续执行 |
+| `noImplicitOverride` | 子类重写父类方法必须写 `override` 关键字；父类方法日后改名，子类会立刻报错而不是悄悄变成「新增方法」 | — |
+| `allowSyntheticDefaultImports` | 只在**类型层面**允许 `import x from 'pkg'`（即使对方没有默认导出）；真正生成互操作代码的是 `esModuleInterop`，两者常一起出现 | — |
+
+#### E. 为什么 apps/zcode-cli 下的包把选项重写一遍
+
+主 workspace 的包都 `extends` 基座；但 `apps/zcode-cli` 是一个**嵌套 workspace**（自己有 packages、tools），它下面 18 份配置**不继承根基座**，而是把 `module: NodeNext`、`esModuleInterop`、`strict`、`skipLibCheck` 等选项各自写全。所以你会在这些文件里看到基座选项的「副本」——不是重复劳动，而是嵌套 workspace 刻意保持独立、可单独发行。
+
+### 2.2 全仓库 38 份 tsconfig 角色总览
+
+下表是仓库里**每一份** tsconfig 的角色与标志性设置（38 = 基座 1 + 主 workspace 13 + desktop 6 + 嵌套 workspace 18）。
+
+**基座（1）**
+
+| 文件 | 角色 | 标志性设置 |
+| --- | --- | --- |
+| `tsconfig.base.json` | 全仓库公共基座，被主 workspace 各包 extends | ES2024、NodeNext、composite、noUncheckedIndexedAccess，未开 strict |
+
+**主 workspace packages/（13）**
+
+| 文件 | 角色 | 继承基座 | 标志性设置 |
+| --- | --- | --- | --- |
+| `packages/zcode-server-cli` | 服务端 CLI 启动器 | 是 | `lib: [ES2022, DOM]`、types node；引用 shared/rpc/services |
+| `packages/web` | 浏览器 Web 客户端（Vite） | 是 | DOM 类型、jsx、`noEmit`；引用 ui/client |
+| `packages/ui` | 共享 React 组件/hooks/store | 是 | jsx、`paths @/*→src/*`、显式 glob include；引用 provider/shared/services/rpc |
+| `packages/shared` | 跨端协议与类型 | 是 | types node、`allowJs` |
+| `packages/services` | 业务服务与持久化（Node） | 是 | ES2025、types node；引用 shared/rpc |
+| `packages/server/tsconfig.json` | 后端服务的日常检查配置 | 是 | `lib: ES2022`；引用 shared/services/client/rpc |
+| `packages/server/tsconfig.build.json` | 后端服务的**发版构建**配置 | **否** | 独立写全选项，ES2022，供构建脚本 `-p` 指定 |
+| `packages/rpc` | 跨端 RPC 框架（同构） | **否** | ES2022 + `moduleResolution: bundler`、strict、composite、lib 含 DOM |
+| `packages/provider` | 模型供应商抽象层 | 是 | `lib: [ES2025, DOM]`、strict |
+| `packages/provider-node` | provider 的 Node 实现 | 是 | ES2025、strict、types node，**不含 DOM** |
+| `packages/formal-proof` | 形式化证明前端页（Vite） | 是 | `moduleResolution: Bundler`、types vite/client、noEmit，include 含 vite.config.ts |
+| `packages/model-option-map` | 模型选项映射数据 | 是 | 仅 ES2025 覆盖 |
+| `packages/client` | Agent 客户端 SDK（同构） | 是 | ES2025 + DOM；引用 services/rpc |
+
+**desktop 桌面端（6）**
+
+| 文件 | 角色 | 标志性设置 |
+| --- | --- | --- |
+| `packages/desktop/tsconfig.json` | 解决方案入口，不编译源码 | `files: []`，聚合 5 个子工程引用 |
+| `tsconfig.main.json` | Electron 主进程（纯 Node） | `outDir: out/main`，无 DOM；引用 shared/services |
+| `tsconfig.host.json` | Local Host 宿主进程（纯 Node） | `outDir: out/host`；引用 shared/services/rpc |
+| `tsconfig.scheduler.json` | 子进程调度器 | `types: [node, electron]` |
+| `tsconfig.preload.json` | 预加载安全桥 | `rootDir: src`（含 src/shared 桥接文件）、lib 含 DOM |
+| `tsconfig.renderer.json` | React 渲染进程（Chromium） | jsx、DOM、`noEmit`；引用 shared/ui/client |
+
+**apps/zcode-cli 嵌套 workspace（18，均不继承基座）**
+
+| 文件 | 角色 | 标志性设置 |
+| --- | --- | --- |
+| `tools/typescript` | 内置 TS 工具目录的选项载体 | 选项最全：ES2024 + strict + override/fallthrough 等；`include: ["tsconfig.json"]` |
+| `tools/prompt-trajectory` | 提示词轨迹脚本 | `noEmit`，运行时直接执行 TS |
+| `packages/tui` | 终端 UI（React JSX） | jsx react-jsx，产出 dist |
+| `packages/telemetry` | 遥测上报 | 标准 Node 库包模板 |
+| `packages/swift-bridge` | Swift 原生能力桥接 | 标准 Node 库包模板 |
+| `packages/shared-types` | 共享纯类型 | `emitDeclarationOnly` → dist-types |
+| `packages/node-repl-host` | Node REPL 宿主 | 标准模板 + exclude dist |
+| `packages/i18n` | 国际化资源 | ES2022 + noUncheckedIndexedAccess（防缺翻译） |
+| `packages/dynamic-workflow` | 动态工作流定义 | ES2022 + noUncheckedIndexedAccess |
+| `packages/dynamic-workflow-runtime` | 工作流运行时执行器 | 同上，与定义侧基线对齐 |
+| `packages/debug/tsconfig.json` | 调试面板（浏览器/Vite） | DOM + Bundler + jsx + noEmit + types vite/client |
+| `packages/debug/tsconfig.server.json` | 调试面板的服务端 | `declaration: false`、`noEmit: false`、outDir dist-server、rootDir `.` |
+| `packages/core` | 核心 agent loop/会话 | 标准模板 + 排除 `**/*.test.ts` |
+| `packages/contracts` | 模块契约/schema | `emitDeclarationOnly` → dist-types |
+| `packages/cli` | zcode 命令入口 | 最小配置（无 outDir/rootDir/declaration） |
+| `packages/browser-use-plugin` | 浏览器自动化插件 | `emitDeclarationOnly` → dist-types |
+| `packages/bootstrap` | 启动装配层 | 标准 Node 库包模板 |
+| `packages/adapters` | 外部 I/O 适配器 | 标准 Node 库包模板 |
+
+> 💡 **读配置的快捷方法**：先看有没有 `extends`（继承基座还是独立写全）→ 看 `lib`/`types`/`jsx`/`noEmit` 判断它跑在 Node 还是浏览器、谁负责打包 → 看 `outDir` + `emitDeclarationOnly` 判断产物形态 → 看 `references` 判断它依赖哪些兄弟包。
 
 ---
 

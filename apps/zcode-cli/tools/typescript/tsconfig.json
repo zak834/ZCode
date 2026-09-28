@@ -1,44 +1,71 @@
 {
-  // JSON Schema 声明：让编辑器/工具按 draft-07 规范校验本文件格式
+  // ============================================================================
+  // 本文件位于 apps/zcode-cli/tools/typescript —— CLI 嵌套 workspace 内置的
+  // TypeScript 工具目录。它【不继承】仓库根基座（嵌套 workspace 相对独立），
+  // 所有编译选项在此写全。该目录本身不产出业务代码，这份配置主要作为编译选项
+  // 载体供工具链读取。
+  // ============================================================================
+
+  // $schema：给编辑器看的「本 JSON 文件结构说明书」地址。VS Code 等会据此
+  // 提供自动补全、悬浮提示和错误标记；对 tsc 编译没有任何影响。
   "$schema": "https://json-schema.org/draft-07/schema#",
   "compilerOptions": {
-    // 允许用「默认导入」的写法引用 CommonJS 模块（类型层面不做报错）
+    // --- 模块互操作与文件名一致性 ---
+    // allowSyntheticDefaultImports：允许在【类型层面】写 import x from 'pkg'
+    // 即使对方没有默认导出（只影响报错与否，不生成互操作代码）。
     "allowSyntheticDefaultImports": true,
-    // 为每个源文件生成对应的 .d.ts 类型声明文件
-    "declaration": true,
-    // 生成 .d.ts.map，让编辑器能从声明文件跳转回 TypeScript 源码
-    "declarationMap": true,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
+    // esModuleInterop：真正在【编译产物】里补齐 CommonJS↔ESM 默认导出互操作
+    // 辅助代码。开启后可自然写 import express from 'express'，
+    // 否则只能写 import * as express from 'express'。
     "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
+    // forceConsistentCasingInFileNames：强制 import 路径的大小写与磁盘文件名
+    // 完全一致。Windows/macOS 文件系统默认不区分大小写，Linux 区分；不打开的话
+    // 在 Windows 能跑的代码到 Linux CI 会「找不到模块」。
+    //   import './Utils'  // 磁盘上是 utils.ts → 在严格区分大小写的环境报错
     "forceConsistentCasingInFileNames": true,
-    // 保证每个文件可被独立转译（与 esbuild/swc 等单文件转译器兼容，禁用易跨文件耦合的写法）
+    // --- 单文件转译约束 ---
+    // isolatedModules：声明每个文件都会被 esbuild/swc 等工具【独立转译】，
+    // 于是禁止必须看别的文件才能翻译的写法，典型如 re-export 类型：
+    //   export { T } from './types'      // 报错：分不清 T 是值还是类型
+    //   export type { T } from './types' // 正确
     "isolatedModules": true,
-    // 可用的标准库 API 类型按 ES2024 提供
-    "lib": ["ES2024"],
-    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
-    "module": "NodeNext",
-    // 模块解析策略与 module 保持一致（NodeNext）
-    "moduleResolution": "NodeNext",
-    // 显式允许真实产出编译文件（不设 noEmit，构建时输出 JS）
-    "noEmit": false,
-    // 禁止 switch 中贯穿到下一个 case（漏写 break 即报错）
-    "noFallthroughCasesInSwitch": true,
-    // 子类重写父类方法时必须显式写 override 关键字
-    "noImplicitOverride": true,
-    // 索引访问（obj[key]、arr[i]）默认带 undefined，强制判空后再使用
-    "noUncheckedIndexedAccess": true,
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译并规避第三方声明冲突
-    "skipLibCheck": true,
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
-    "strict": true,
-    // 编译产物的 JS 语法级别为 ES2024
+    // verbatimModuleSyntax：类型导入必须显式写 import type，运行时语义与
+    // 书写严格一致，让 tsc 与单文件转译器行为相同。
+    "verbatimModuleSyntax": true,
+    // --- 产物语法与可用类型 ---
+    // target：产物 JS 语法级别 ES2024（新版 Node 直接支持，无需降级）。
     "target": "ES2024",
-    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
-    "types": ["node"],
-    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
-    "verbatimModuleSyntax": true
+    // lib：ES2024 标准库类型（Promise/Map 等），纯 Node 不加 DOM。
+    "lib": ["ES2024"],
+    // module/moduleResolution：按 Node.js 最新 ESM 规则组织产物与查找模块，
+    // 相对导入必须带 .js 后缀（import x from './x.js'，源文件其实是 .ts）。
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // --- 声明与调试文件（工具链需要声明产物）---
+    "declaration": true, // 生成 .d.ts：只含类型的「接口头文件」，供其他模块知道本模块的类型
+    "declarationMap": true, // 生成 .d.ts.map：从声明文件「跳转定义」可回到 .ts 源码
+    // --- 发射开关 ---
+    // noEmit:false：显式表示【允许】产出文件（与「只查错」的 noEmit:true 相对）。
+    "noEmit": false,
+    // --- 额外的严格编码规则 ---
+    // noFallthroughCasesInSwitch：switch 的 case 漏写 break 导致贯穿时直接报错。
+    "noFallthroughCasesInSwitch": true,
+    // noImplicitOverride：子类重写父类方法必须写 override 关键字，
+    // 防止父类方法改名后子类「以为自己在重写、其实在新增」。
+    "noImplicitOverride": true,
+    // noUncheckedIndexedAccess：arr[0]、obj[k] 的结果类型自动加上 undefined，
+    // 必须判空后才能用，避免越界/缺键时读到 undefined 还继续调用而崩溃。
+    "noUncheckedIndexedAccess": true,
+    // --- 编译速度 ---
+    // skipLibCheck：不检查 node_modules 里的第三方 .d.ts，大幅加快编译，
+    // 并规避不同库自带声明互相冲突的问题。
+    "skipLibCheck": true,
+    // strict：一键开启全部严格检查（noImplicitAny、strictNullChecks 等）。
+    "strict": true,
+    // types：显式只加载 @types/node（process、Buffer、文件系统类型）。
+    "types": ["node"]
   },
-  // 只把 tsconfig.json 自身列入文件集合：本工程不直接编译源码，仅作为编译选项的配置载体供工具读取
+  // 工程文件集合只含本配置自身：该目录没有需要 tsc 编译的业务源码，
+  // 写它是为了让这份配置成为可被发现、可被工具读取的合法工程。
   "include": ["tsconfig.json"]
 }

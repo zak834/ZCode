@@ -1,19 +1,24 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 渲染进程子工程：用户看到的 React 界面，运行在 Electron 的 Chromium 里，
+  // 等价于一个浏览器环境。继承根基座，覆盖浏览器相关选项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 产物输出到 out/renderer
+    // 产物输出到 out/renderer。
     "outDir": "out/renderer",
-    // 源码根目录为 src/renderer
+    // 源码根目录为 src/renderer。
     "rootDir": "src/renderer",
-    // 浏览器环境类型：最新 ES 标准库 + DOM + DOM 迭代器（渲染进程运行 Chromium）
+    // 浏览器环境类型：ES2025 + DOM + 可迭代 DOM 集合（document.querySelectorAll
+    // 的结果可 for...of），与 web 包保持同一套浏览器类型基线。
     "lib": ["es2025", "dom", "dom.iterable"],
-    // React 自动 JSX 转换
+    // React 17+ 自动 JSX 转换，组件文件无需 import React。
     "jsx": "react-jsx",
-    // 只做类型检查、不产出文件：实际打包由构建工具（如 electron-vite）完成
+    // noEmit：tsc 只查错；渲染端真正的打包由 electron-vite（Vite）完成，
+    // 避免 tsc 产物与打包产物重复。
     "noEmit": true
   },
-  // 只检查 src/renderer 目录
+  // 只检查 src/renderer 目录。
   "include": ["src/renderer"],
   // renderer 直接 import 了 shared；把它补进 references，避免 renderer 单独检查时再走源码回退路径。
   "references": [{ "path": "../shared" }, { "path": "../ui" }, { "path": "../client" }]

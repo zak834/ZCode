@@ -1,16 +1,24 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // preload（预加载脚本）子工程。它在渲染进程网页加载前由 Electron 注入，
+  // 运行在一个「既能访问部分 Node/Electron API、又贴近渲染进程」的沙箱环境，
+  // 是主进程与页面之间的安全桥。继承根基座。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 产物输出到 out/preload
+    // 产物输出到 out/preload。
     "outDir": "out/preload",
-    // 源码根目录为 src（preload 还引用了 src/shared 下的桥接文件，根目录必须覆盖两者）
+    // rootDir 是 src 而不是 src/preload：因为 include 里除了 src/preload，
+    // 还收了 src/shared/armsRumBridgeForward.ts。rootDir 必须是所有输入文件
+    // 的公共祖先目录，否则 tsc 报「文件不在 rootDir 之下」。
     "rootDir": "src",
-    // ES2025 + DOM 类型：preload 运行在类浏览器的渲染进程环境
+    // ES2025 + DOM：preload 贴近渲染进程，会接触浏览器侧对象；
+    // 但 Node 能力以 Electron 注入的有限 API 为准。
     "lib": ["es2025", "dom"]
   },
-  // 编译 preload 目录，外加 src/shared 下的监控桥接转发文件
+  // 主体是 src/preload；额外显式纳入 src/shared 下的监控桥接转发文件
+  // （该文件被 preload 引用，放在 shared 目录是为了多端共用）。
   "include": ["src/preload", "src/shared/armsRumBridgeForward.ts"],
-  // 工程引用：复用 shared 的声明产物
+  // 复用 shared 包的声明产物，不把其源码拉进本工程。
   "references": [{ "path": "../shared" }]
 }

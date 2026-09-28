@@ -1,20 +1,34 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 web 包（浏览器端 Web 客户端，由 Vite 开发/打包）的 TS 配置。
+  // 继承根基座，这里只覆盖浏览器端特有的选项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // --- 源码与产物 ---
+    // outDir 在此仅表示「假设的产物目录」，配合下面的 noEmit 实际不会写文件；
+    // 保留它是为了让路径计算与其他包保持一致。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src，产物相对路径以剥去 src 前缀计算。
     "rootDir": "src",
-    // 浏览器环境类型：最新 ES 标准库 + DOM + DOM 迭代器（NodeList 等可迭代）
+    // --- 浏览器环境专属的内置类型（覆盖基座的 ["es2024"]）---
+    // es2025：可用 ES2025 标准库类型；dom：document/window/HTMLElement 等；
+    // dom.iterable：让 NodeList、HTMLCollection 等 DOM 集合可用 for...of / 展开，
+    // 例如 document.querySelectorAll('a') 的结果才能写 for (const el of list)。
     "lib": ["es2025", "dom", "dom.iterable"],
-    // React 17+ 自动 JSX 转换，组件里无需再 import React
+    // jsx：告诉 TS 如何理解 .tsx 文件里的 JSX 标签（<div />）。
+    // "react-jsx" 是 React 17+ 的自动转换：编译器自动注入 jsx 运行时辅助函数，
+    // 每个组件文件【不需要】再写 import React。旧式 "react" 取值才需要手动引入。
     "jsx": "react-jsx",
-    // 只做类型检查、不产出文件：实际打包由 Vite 完成
+    // noEmit：只让 tsc「查错」，不产出任何 .js/.d.ts 文件。
+    // 原因：本包真正的打包由 Vite（底层 esbuild/rollup）完成，tsc 只负责
+    // 在编辑器和 pnpm typecheck 阶段做类型检查。若让 tsc 也产物，会和
+    // Vite 的产物重复且互相覆盖。
     "noEmit": true
   },
-  // 只检查 src 目录
+  // 只把 src 纳入类型检查；Vite 配置文件由根级/工具链单独处理。
   "include": ["src"],
-  // 工程引用：web 依赖 ui（组件）与 client（Agent 客户端 SDK）两个包
+  // 工程引用：web 页面直接使用 ui 包的组件与 client 包的 Agent 客户端 SDK，
+  // 检查前先消费它们已构建的声明产物，不把对方源码拉进本工程重复检查。
   "references": [{ "path": "../ui" }, { "path": "../client" }]
 }

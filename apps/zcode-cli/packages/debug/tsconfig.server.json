@@ -1,44 +1,49 @@
 {
+  // ============================================================================
+  // debug 包的【服务端】配置：与调试面板配套、跑在 Node 里的服务进程。
+  // 与 tsconfig.json（面板，noEmit + DOM + Vite）刻意分开，互不污染类型环境。
+  // 嵌套 workspace 独立配置，不继承根基座。
+  // ============================================================================
   "compilerOptions": {
-    // 允许用「默认导入」的写法引用只有具名导出的模块（类型层面不做报错）
+    // 类型层面允许默认导入。
     "allowSyntheticDefaultImports": true,
-    // 不生成 .d.ts 类型声明（服务端产物只自用，不对外提供类型）
+    // declaration:false：不生成 .d.ts。服务端产物只给自己运行，不对外提供类型。
     "declaration": false,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
+    // 补齐 CommonJS 默认导出互操作。
     "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
+    // 导入路径大小写与文件名强制一致。
     "forceConsistentCasingInFileNames": true,
-    // 保证每个文件可被独立转译（与 esbuild/swc 等单文件转译器兼容）
+    // 每个文件可被独立转译。
     "isolatedModules": true,
-    // 可用的标准库 API 类型按 ES2024 提供
+    // 纯 Node：只给 ES2024 标准库类型，不加 DOM（避免误用浏览器 API）。
     "lib": ["ES2024"],
-    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
+    // Node 最新 ESM 模块规则与解析规则。
     "module": "NodeNext",
-    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
-    // 显式允许真实产出编译文件（与调试面板的 noEmit 配置区分开）
+    // 显式允许产出 JS（与面板配置的 noEmit:true 对照）。
     "noEmit": false,
-    // 禁止 switch 中贯穿到下一个 case（漏写 break 即报错）
+    // switch 漏 break 贯穿时报错。
     "noFallthroughCasesInSwitch": true,
-    // 子类重写父类方法时必须显式写 override 关键字
+    // 重写父类方法必须写 override。
     "noImplicitOverride": true,
-    // 索引访问（obj[key]、arr[i]）默认带 undefined，强制判空后再使用
+    // 下标访问结果带 undefined，强制判空。
     "noUncheckedIndexedAccess": true,
-    // 编译产物输出到 dist-server 目录（与调试面板的 dist 产物分开）
+    // 产物输出到 dist-server，与面板的 dist 明确区分，避免互相覆盖。
     "outDir": "dist-server",
-    // 源码根目录为包根目录（因为同时编译 server/、scripts/ 两个顶层目录）
+    // rootDir 是包根「.」而不是 src：因为输入同时来自 server/、scripts/
+    // 和 src/shared.ts 三个并列位置，根必须是它们的公共祖先目录。
     "rootDir": ".",
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
+    // 跳过第三方声明检查。
     "skipLibCheck": true,
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
+    // 全套严格类型检查。
     "strict": true,
-    // 编译产物的 JS 语法级别为 ES2024
+    // 产物语法目标 ES2024。
     "target": "ES2024",
-    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
+    // Node 全局类型。
     "types": ["node"],
-    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
+    // 类型导入必须写 import type。
     "verbatimModuleSyntax": true
   },
-  // 只编译 server 目录、scripts 目录和 src/shared.ts（面板与服务端共享的类型部分）
+  // 输入 = 服务端代码 server/、脚本 scripts/、与面板共享的 src/shared.ts。
   "include": ["server", "scripts", "src/shared.ts"]
 }

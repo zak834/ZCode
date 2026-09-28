@@ -1,40 +1,45 @@
 {
+  // ============================================================================
+  // debug 包的【调试面板（浏览器端）】配置。面板是一个跑在浏览器/Vite 里的
+  // 前端应用，与同目录 tsconfig.server.json（Node 服务端）刻意分开。
+  // 嵌套 workspace 独立配置，不继承根基座。
+  // ============================================================================
   "compilerOptions": {
-    // 允许用「默认导入」的写法引用只有具名导出的模块（类型层面不做报错）
+    // 允许在类型层面写默认导入（搭配 esModuleInterop 使用）。
     "allowSyntheticDefaultImports": true,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
+    // 补齐 CommonJS 默认导出互操作。
     "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
+    // 导入路径大小写与文件名强制一致。
     "forceConsistentCasingInFileNames": true,
-    // 保证每个文件可被独立转译（与 Vite 内置的 esbuild 转译兼容）
+    // 每个文件可被 Vite 的 esbuild 独立转译。
     "isolatedModules": true,
-    // 使用 React 17+ 的自动 JSX 转换（无需在每个文件 import React）
+    // React 自动 JSX 转换，组件无需 import React。
     "jsx": "react-jsx",
-    // 可用类型：浏览器 DOM API + DOM 迭代器 + ES2024 标准库（调试面板跑在浏览器里）
+    // 浏览器三件套类型：DOM API、可迭代 DOM 集合、ES2024 标准库。
     "lib": ["DOM", "DOM.Iterable", "ES2024"],
-    // 交给打包器处理模块语法，源码按最新 ESM 写法书写
+    // 模块语法保持最新 ESM，交给 Vite/rollup 打包。
     "module": "ESNext",
-    // 按打包器（Vite/esbuild）的解析策略查找模块，支持裸包名导入
+    // 按打包器规则解析：可省略扩展名、裸包名导入，与 Vite 实际行为一致。
     "moduleResolution": "Bundler",
-    // 只做类型检查，不产出编译文件——JS 打包由 Vite 负责
+    // 只查错不产物——面板 JS 由 Vite 打包生成。
     "noEmit": true,
-    // 禁止 switch 中贯穿到下一个 case（漏写 break 即报错）
+    // switch 漏 break 贯穿时报错。
     "noFallthroughCasesInSwitch": true,
-    // 索引访问（obj[key]、arr[i]）默认带 undefined，强制判空后再使用
+    // 下标访问结果带 undefined，强制判空。
     "noUncheckedIndexedAccess": true,
-    // 允许 import JSON 文件并推导其类型
+    // 允许 import json 并推导其类型。
     "resolveJsonModule": true,
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
+    // 跳过第三方声明检查。
     "skipLibCheck": true,
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
+    // 全套严格类型检查。
     "strict": true,
-    // 编译产物的 JS 语法级别为 ES2024
+    // 产物语法目标 ES2024（现代浏览器直接支持）。
     "target": "ES2024",
-    // 引入 Vite 的客户端特殊类型（import.meta.env、资源导入等能力声明）
+    // 加载 Vite 客户端类型：import.meta.env、?url/?.css 等资源导入声明。
     "types": ["vite/client"],
-    // 强制 import/export 的类型写法与运行时一致（类型导入必须用 import type）
+    // 类型导入必须写 import type，保证与 esbuild 单文件转译行为一致。
     "verbatimModuleSyntax": true
   },
-  // 类型检查覆盖 src 源码目录和 Vite 配置文件
+  // 检查面板源码目录与 Vite 配置文件本身。
   "include": ["src", "vite.config.ts"]
 }

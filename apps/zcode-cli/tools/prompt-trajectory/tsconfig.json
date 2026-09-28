@@ -1,22 +1,26 @@
 {
+  // ============================================================================
+  // prompt-trajectory 工具（提示词轨迹处理脚本）的 TS 配置。
+  // 嵌套 workspace 内独立配置，不继承根基座；脚本由运行时直接执行 TS，
+  // tsc 只负责类型检查。
+  // ============================================================================
   "compilerOptions": {
-    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
+    // 按 Node.js 最新 ESM 规则组织模块与查找文件（相对导入要带 .js 后缀）。
     "module": "NodeNext",
-    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
-    // 只做类型检查，不产出任何编译文件（本工具目录由运行时/脚本直接执行 TS）
+    // 只做类型查错，不产出 JS——脚本通过 TS 运行时/加载器直接执行。
     "noEmit": true,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
+    // 补齐 CommonJS 依赖的默认导出互操作，允许 import x from 'cjs-pkg'。
     "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
+    // 强制导入路径大小写与磁盘一致，避免 Windows 写、Linux 跑时找不到模块。
     "forceConsistentCasingInFileNames": true,
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
+    // 开启全套严格类型检查。
     "strict": true,
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
+    // 跳过第三方 .d.ts 检查，加快速度。
     "skipLibCheck": true,
-    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
+    // 加载 Node 全局类型（process、Buffer 等）。
     "types": ["node"]
   },
-  // 类型检查覆盖 src 目录下的所有 TypeScript 文件
+  // 检查 src 下所有 TS 文件。
   "include": ["src/**/*"]
 }

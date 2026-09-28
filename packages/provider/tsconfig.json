@@ -1,16 +1,24 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 provider 包（模型供应商抽象层，可同时用于浏览器/Node 环境）
+  // 的 TS 配置。继承根基座，这里只写本包覆盖项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // 编译产物输出到 dist。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src。
     "rootDir": "src",
-    // 可用类型：ES2025 标准库 + 浏览器 DOM
+    // lib 覆盖基座：ES2025 标准库 + DOM。provider 抽象层的部分类型/实现
+    // 会在浏览器端（如 Web 直连场景）被消费，需要 document/fetch 的 DOM 类型。
     "lib": ["ES2025", "DOM"],
-    // 开启全套严格类型检查（base 里未开 strict，这里单独启用）
+    // strict：开启全套严格类型检查。
+    // 基座【没有】统一开 strict（只提前收紧了 noUncheckedIndexedAccess），
+    // 本包涉及供应商请求/响应结构，类型必须精确，因此单独在这里启用。
+    // 开启后典型效果：未标注类型的参数会被推断为 any 并报错（noImplicitAny）、
+    // null/undefined 不能直接当字符串用（strictNullChecks）。
     "strict": true
   },
-  // 只编译 src 目录
+  // 只编译 src 目录。
   "include": ["src"]
 }

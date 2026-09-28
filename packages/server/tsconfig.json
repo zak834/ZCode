@@ -1,15 +1,19 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 server 包（托管 Web 页面与 Agent 的后端服务）的【类型检查配置】。
+  // 继承根基座；真正发版构建用的是同目录 tsconfig.build.json（见该文件）。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // 编译产物输出到 dist。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src。
     "rootDir": "src",
-    // 可用的标准库 API 类型按 ES2022 提供
+    // 后端运行时按 ES2022 标准库提供类型（与 tsconfig.build.json 的产物目标对齐，
+    // 避免「检查时能调用的新 API，构建目标却不支持」的错位）。
     "lib": ["ES2022"]
   },
-  // 只编译 src 目录
+  // 只编译 src 目录。
   "include": ["src"],
   // server 同时直接 import 了 shared / services / client / rpc。
   // 之前 references 不完整，构建时会退回到沿着包入口抓源码，造成 rpc 报错被重复放大。

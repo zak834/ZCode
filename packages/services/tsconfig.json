@@ -1,17 +1,21 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 services 包（业务服务与持久化层，运行在 Node 端）的 TS 配置。
+  // 继承根基座，这里只写本包特有覆盖项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // 编译产物输出到 dist。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src，产物按剥去 src 前缀的相对路径落盘。
     "rootDir": "src",
-    // 可用的标准库 API 类型按 ES2025 提供
+    // 覆盖基座：标准库类型升级到 ES2025（本包面向新版 Node 运行时）。
     "lib": ["es2025"],
-    // 引入 @types/node 的 Node.js 全局类型
+    // 显式加载 @types/node，获得 process、Buffer、NodeJS.Timeout 等全局类型；
+    // services 是纯 Node 环境，不需要 DOM 类型。
     "types": ["node"]
   },
-  // 只编译 src 目录
+  // 只编译 src 目录。
   "include": ["src"],
   // 之前没声明对 rpc 的工程引用，tsc 会把 rpc 当普通源码依赖重复检查，导致错误在多个消费者里反复出现。
   // 这里补上 references，让 services 直接消费 rpc 的声明产物。

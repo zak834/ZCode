@@ -1,32 +1,34 @@
 {
+  // ============================================================================
+  // shared-types 包（CLI 各模块共享的纯类型定义）的 TS 配置。
+  // 嵌套 workspace 独立配置，不继承根基座。它是【纯类型包】：
+  // 只发射 .d.ts 声明到 dist-types，不产 JS（JS 由打包工具另行处理）。
+  // ============================================================================
   "compilerOptions": {
-    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
+    // Node 最新 ESM 模块规则与解析规则。
     "module": "NodeNext",
-    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
-    // 产物只输出到 dist-types 目录
+    // 类型声明产物目录（特意与 JS 产物目录 dist 区分开）。
     "outDir": "./dist-types",
-    // 源码根目录为 src（产物路径会剥去 src 前缀）
     "rootDir": "./src",
-    // 为每个源文件生成对应的 .d.ts 类型声明文件
-    "declaration": true,
-    // 生成 .d.ts.map，让编辑器能从声明文件跳转回 TypeScript 源码
-    "declarationMap": true,
-    // 只生成 .d.ts 类型声明，不产出 JS——本包是纯类型包，JS 由打包工具另行产出
+    "declaration": true, // 生成 .d.ts
+    "declarationMap": true, // 生成 .d.ts.map
+    // emitDeclarationOnly：本次编译【只输出声明文件】，不输出 JS。
+    // 纯类型包的价值就是给别人 import type，运行时代码由消费方打包带走。
     "emitDeclarationOnly": true,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
+    // CommonJS 默认导出互操作。
     "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
+    // 导入路径大小写强制一致。
     "forceConsistentCasingInFileNames": true,
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
+    // 全套严格类型检查。
     "strict": true,
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
+    // 跳过第三方声明检查。
     "skipLibCheck": true,
-    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
+    // Node 全局类型。
     "types": ["node"]
   },
-  // 类型检查覆盖 src 目录下的所有 TypeScript 文件
+  // 编译 src 下所有 TS 文件。
   "include": ["src/**/*"],
-  // 构建时排除依赖目录、历史产物和测试代码
+  // 排除：依赖目录、JS 产物、声明产物、测试代码都不参与本次声明构建。
   "exclude": ["node_modules", "dist", "dist-types", "test"]
 }

@@ -1,15 +1,18 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // Local Host 子工程：Agent 会话运行时的宿主进程（纯 Node 环境），
+  // 负责管理会话、spawn Agent CLI 等。继承根基座。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 产物输出到 out/host
+    // 产物输出到 out/host。
     "outDir": "out/host",
-    // 源码根目录为 src/host
+    // 源码根目录为 src/host。
     "rootDir": "src/host",
-    // 可用的标准库 API 类型按 ES2025 提供（host 是纯 Node 环境）
+    // 纯 Node 环境：标准库类型 ES2025，不加 DOM。
     "lib": ["es2025"]
   },
-  // 只编译 src/host 目录
+  // 只编译 src/host 目录。
   "include": ["src/host"],
   // host 既直接依赖 services/shared，也直接 import 了 rpc；补 references 是为了避免它再次把 rpc 源码拉进来检查。
   "references": [{ "path": "../shared" }, { "path": "../services" }, { "path": "../rpc" }]

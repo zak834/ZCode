@@ -1,18 +1,24 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 formal-proof 包（形式化证明相关的前端页面，Vite 驱动）的 TS 配置。
+  // 继承根基座，但作为纯浏览器工程覆盖掉基座的 Node 系模块选项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 可用类型：ES2024 标准库 + DOM + DOM 迭代器
+    // 浏览器类型：ES2024 标准库 + DOM + 可迭代 DOM 集合（for...of 遍历节点）。
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
-    // 产物组织为最新版 ES 模块语法
+    // module 覆盖基座的 nodenext：产物保持最新 ESM 语法交给 Vite/rollup 处理。
     "module": "ESNext",
-    // 用打包器规则解析模块，配合 Vite 的解析方式
+    // moduleResolution 覆盖为 Bundler：模拟 Vite/esbuild 的查找方式，
+    // 允许 import 时省略扩展名、按裸包名导入，避免「Vite 能跑、tsc 报错」。
     "moduleResolution": "Bundler",
-    // 引入 Vite 客户端类型（import.meta.env、资源导入等）
+    // types：只加载 vite/client，它提供 Vite 项目专属的环境类型，
+    // 例如 import.meta.env.DEV、import logoUrl from './logo.svg' 等资源导入声明。
     "types": ["vite/client"],
-    // 只做类型检查、不产出文件：实际打包由 Vite 完成
+    // noEmit：tsc 只查错不产物；JS 与资源打包全部由 Vite 负责。
     "noEmit": true
   },
-  // 检查 src 目录和 Vite 配置文件
+  // 检查源码目录的同时，把 vite.config.ts 也纳入工程（配置文件同样需要类型检查，
+  // 且它内部 import 的 vite 插件类型需要被同一个工程上下文解析）。
   "include": ["src", "vite.config.ts"]
 }

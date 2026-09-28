@@ -1,35 +1,48 @@
 {
+  // ============================================================================
+  // 本文件是 rpc 包（跨端 RPC 框架，浏览器端与 Node 端都会用到）的 TS 配置。
+  // 它【不继承】根基座，所有选项在此显式写全，独立保证构建行为可控。
+  // ============================================================================
   // 这里改成 composite project，是因为之前 consumers 会顺着 package export 直接把 rpc 源码拖进来重复检查。
   // 改成可被 project references 消费的独立工程后，typecheck 会优先复用 rpc 自己生成的声明产物，避免同一批错误被放大打印。
   "compilerOptions": {
-    // 产物按 ES2022 语法标准输出
+    // --- 产物语法、模块与解析 ---
+    // target：产物 JS 语法级别为 ES2022。
     "target": "ES2022",
-    // 产物组织为 ES2022 模块
+    // module：产物使用 ES2022 版 ESM 语法（import/export 原样保留，
+    // 由后续打包/运行环境决定最终形态），而不是 NodeNext 的「随 type 字段切换」。
     "module": "ES2022",
-    // 用打包器（bundler）规则解析模块，导入可省略扩展名
+    // moduleResolution：按「打包器」规则查找模块。与 NodeNext 的关键区别是
+    // 允许省略扩展名、支持 package.json exports 的 bundler 友好解析，
+    // 因为 rpc 是一个会被各端打包器消费的库，而非直接被 Node 执行的程序。
     "moduleResolution": "bundler",
-    // 产物输出到 dist 目录
+    // --- 目录 ---
     "outDir": "./dist",
-    // 源码根目录为 src
     "rootDir": "./src",
-    // 开启全套严格类型检查
+    // --- 类型严格度 ---
+    // strict：一键开启全部严格检查（noImplicitAny、strictNullChecks、
+    // strictFunctionTypes 等）。RPC 是跨进程边界的框架，参数类型一旦含糊
+    // 就会让两端协议对不上，所以这里独立开严（基座本身未统一开 strict）。
     "strict": true,
-    // ESM 与 CommonJS 导入互操作
+    // esModuleInterop：允许自然 default 导入 CommonJS 依赖。
     "esModuleInterop": true,
-    // 生成 .d.ts 类型声明
+    // --- 声明产物：库必须对外暴露类型 ---
+    // declaration：为每个源文件生成 .d.ts，调用方据此获得跨端 RPC 接口类型。
     "declaration": true,
-    // 为声明生成映射，支持跳转回源码
+    // declarationMap：生成声明到源码的映射，「跳转定义」可直达 .ts 源码。
     "declarationMap": true,
-    // 生成 sourceMap 便于调试
+    // sourceMap：生成 JS 到 TS 的行映射，便于调试打包后的库代码。
     "sourceMap": true,
-    // 允许被工程引用，启用增量编译
+    // composite：标记为可被 references 引用的工程，并生成 .tsbuildinfo
+    // 支持 tsc -b 增量构建（见文件头注释的修复背景）。
     "composite": true,
     // 修复原因：rrweb 传递依赖的旧 @types/css-font-loading-module 会和新版 TypeScript 内置 DOM 声明重复。
     // rpc 没继承根 tsconfig，之前没有跳过第三方声明检查，导致 bootstrap 在依赖类型冲突上失败。
     "skipLibCheck": true,
-    // 同时提供 Node 与浏览器的标准库类型（rpc 两端都会用到）
+    // lib：同时给 ES2022 标准库与 DOM 类型——rpc 同构运行在 Node 服务端
+    // 与浏览器/渲染进程端，两侧的内置 API 类型都要能通过检查。
     "lib": ["ES2022", "DOM"]
   },
-  // 编译 src 下的所有 .ts 文件
+  // 只编译 src 下所有 .ts 文件（本包不含 .tsx）。
   "include": ["src/**/*.ts"]
 }

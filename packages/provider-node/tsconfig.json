@@ -1,18 +1,23 @@
 {
-  // 继承仓库根目录的 tsconfig.base.json 公共编译配置
+  // ============================================================================
+  // 本文件是 provider-node 包（provider 的 Node.js 具体实现：进程内网络、
+  // 流式请求等）的 TS 配置。继承根基座，这里只写本包覆盖项。
+  // ============================================================================
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 编译产物输出到 dist 目录
+    // 编译产物输出到 dist。
     "outDir": "dist",
-    // 源码根目录为 src
+    // 源码根目录为 src。
     "rootDir": "src",
-    // 可用的标准库 API 类型按 ES2025 提供
+    // 覆盖基座：标准库类型升级到 ES2025（运行于新版 Node）。
+    // 这里【不加】DOM：本包只在 Node 端运行，与 provider（抽象层）刻意区分。
     "lib": ["ES2025"],
-    // 开启全套严格类型检查
+    // strict：开启全套严格类型检查。请求解析、流式 chunk 处理对类型精度
+    // 要求高，未标注 any 与空值问题在编译期就拦截。
     "strict": true,
-    // 引入 @types/node 的 Node.js 全局类型（provider-node 运行在 Node 端）
+    // 显式加载 @types/node，获得 process、Readable、Buffer 等 Node 类型。
     "types": ["node"]
   },
-  // 只编译 src 目录
+  // 只编译 src 目录。
   "include": ["src"]
 }

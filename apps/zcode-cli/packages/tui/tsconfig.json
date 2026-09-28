@@ -1,30 +1,30 @@
 {
+  // ============================================================================
+  // tui 包（CLI 的终端用户界面，用 React/Ink 之类渲染终端组件）的 TS 配置。
+  // 嵌套 workspace 独立配置，不继承根基座；它是【会产出 JS 和声明】的库包。
+  // ============================================================================
   "compilerOptions": {
-    // 按带 .js 后缀的 ESM 规则解析模块（Node.js 官方策略），import 路径需写全扩展名
+    // --- 模块：Node 运行的 ESM ---
     "module": "NodeNext",
-    // 模块解析策略与 module 保持一致（NodeNext）
     "moduleResolution": "NodeNext",
-    // 编译产物输出到 dist 目录
+    // --- 目录 ---
+    // 产物写到 dist；源码根是 src（src/a/x.ts → dist/a/x.js）。
     "outDir": "./dist",
-    // 源码根目录为 src（产物路径会剥去 src 前缀）
     "rootDir": "./src",
-    // 为每个源文件生成对应的 .d.ts 类型声明文件
-    "declaration": true,
-    // 生成 .d.ts.map，让编辑器能从声明文件跳转回 TypeScript 源码
-    "declarationMap": true,
-    // 启用 CommonJS/ESM 互操作语义（default 导入、__importStar 等编译辅助）
-    "esModuleInterop": true,
-    // 强制 import 路径大小写与真实文件名一致，避免跨平台（尤其 Windows）构建差异
-    "forceConsistentCasingInFileNames": true,
-    // 使用 React 17+ 的自动 JSX 转换（无需在每个文件 import React）
+    // --- 声明产物：作为库要给消费方提供类型 ---
+    "declaration": true, // 生成 .d.ts 类型声明
+    "declarationMap": true, // 生成 .d.ts.map，支持从声明跳回源码
+    // --- 互操作与跨平台 ---
+    "esModuleInterop": true, // 自然 default 导入 CommonJS 包
+    "forceConsistentCasingInFileNames": true, // 导入大小写必须与文件名一致（防 Windows→Linux 翻车）
+    // --- JSX：终端组件同样用 React JSX 语法 ---
+    // react-jsx：自动注入 jsx 运行时，文件里不用 import React。
     "jsx": "react-jsx",
-    // 开启全部严格类型检查（strictNullChecks、noImplicitAny 等）
-    "strict": true,
-    // 跳过对 node_modules 中第三方 .d.ts 的类型检查，加快编译
-    "skipLibCheck": true,
-    // 引入 @types/node 的 Node.js 全局类型（process、Buffer 等）
-    "types": ["node"]
+    // --- 检查 ---
+    "strict": true, // 全套严格类型检查
+    "skipLibCheck": true, // 不检查第三方声明文件
+    "types": ["node"] // 加载 Node 全局类型
   },
-  // 类型检查覆盖 src 目录下的所有 TypeScript 文件
+  // 编译 src 下所有 TS 文件。
   "include": ["src/**/*"]
 }
