@@ -50,7 +50,81 @@
 | **katex、marked、highlight.js、pinyin-pro、@stripe/*** | 数学公式、Markdown 解析、高亮、拼音搜索（中文文件名匹配）、支付 | `packages/ui` |
 
 > 💡 **TS 知识点：`.tsx` 不是新语言**
-> `tsx` 后缀 = TypeScript + JSX（React 的 HTML-like 语法）。只有包含 JSX 的文件才用 `.tsx`，纯逻辑文件仍是 `.ts`。本仓库约定：`packages/ui` 里连 hooks 都可能含 JSX，所以 hooks 目录里也有 `.tsx`。
+> `tsx` 后缀 = TypeScript + JSX（见下方专节）。只有包含 JSX 的文件才用 `.tsx`，纯逻辑文件仍是 `.ts`。本仓库约定：`packages/ui` 里连 hooks 都可能含 JSX，所以 hooks 目录里也有 `.tsx`。
+
+### JSX：在 JS 里直接写「类 HTML 标签」的语法扩展
+
+初学者第一次打开 `packages/ui/src/components/` 会看到这种代码：
+
+```tsx
+function Greeting({ name }: { name: string }) {
+  return <h1 className="text-ui-lg">Hello, {name}!</h1>;
+}
+```
+
+`<h1>...</h1>` 看起来像 HTML，但它其实是 **JSX**——一个由 React 团队发明的语法扩展，**不是 JS 的标准语法**。浏览器和 Node 都不认识它，必须先「编译」成普通 JS 才能运行。
+
+#### 它本质上是什么：一个函数调用
+
+编译后，上面那段等价于：
+
+```ts
+React.createElement('h1', { className: 'text-ui-lg' }, 'Hello, ', name, '!')
+```
+
+也就是说 `<h1>...</h1>` 只是个**语法糖**，编译器会把它翻译成对 `React.createElement` 的调用：第一个参数是标签名（或组件函数），第二个是属性对象，后面是子节点。JSX 的意义是让这种「创建 UI 元素」的代码写起来像 HTML 一样直观，不用写一长串嵌套函数调用。
+
+#### 和 HTML 的关键差异（容易踩的坑）
+
+| 点 | HTML | JSX |
+| --- | --- | --- |
+| 属性命名 | `class="foo"` | `className="foo"`（因为 `class` 是 JS 保留字） |
+| 属性命名 | `for="id"` | `htmlFor="id"`（同理 `for` 是保留字） |
+| 标签闭合 | `<br>` 可不闭合 | 必须写 `<br />`（自闭合或显式闭合） |
+| 大小写 | 不区分 | 区分：`<div>` 是 HTML 标签，`<MyComp>` 是自定义组件（首字母大写即组件） |
+| 注释 | `<!-- -->` | `{/* 注释 */}`（写在花括号里，因为这是 JS 上下文） |
+| 条件渲染 | 没有原生方式 | `{cond && <Comp/>}` 或三元 `{c ? <A/> : <B/>}` |
+
+#### 为什么需要 `jsx: "react-jsx"` 编译选项
+
+TypeScript 编译器本身也不认识 JSX——它需要你在 `tsconfig.json` 里开 `jsx` 选项告诉它「怎么处理这些尖括号」：
+
+- `"react-jsx"`（React 17+ 的自动转换）：编译器自动注入 `react/jsx-runtime` 里的辅助函数，**组件文件里不用再写 `import React`**。本仓库 web、ui、renderer、tui、debug 都用这个；
+- `"react"`（旧式）：编译产物调用 `React.createElement`，所以每个文件都要 `import React from 'react'`；
+- `"preserve"`：TS 不翻译，保留 JSX 原样，交给后续的 Babel/esbuild 处理（Vite 用这种，最终由 esbuild 转换）。
+
+`react-jsx` 是现在的默认选择——本仓库的 tsconfig 里凡是有 `jsx: "react-jsx"` 的包，都享受这种「自动导入」的便利。
+
+#### JSX 不是 React 独占的
+
+JSX 是语法扩展，任何库都能用它的「在 JS 里写标签」能力。本仓库里就有两个非典型使用者：
+
+- **React（浏览器/渲染进程）**：最主流用法，`<div>` 变 DOM 节点，见 `packages/ui`、`packages/web`、desktop renderer；
+- **React + opentui（终端 TUI）**：同样的 `<Box>`、`<Text>` 组件，但渲染目标不是浏览器像素，而是终端字符网格——见 `apps/zcode-cli/packages/tui` 的 110+ 个 `app-*.tsx`。同一种写 UI 的心智模型，跨端复用。
+
+#### 一个最小可运行例子
+
+```tsx
+// App.tsx —— 后缀必须是 .tsx 才能写 JSX
+import { useState } from "react";
+
+function App() {
+  const [n, setN] = useState(0);
+  return (
+    <button onClick={() => setN(n + 1)}>
+      点击了 {n} 次
+    </button>
+  );
+}
+```
+
+注意三件事：
+1. 文件后缀是 `.tsx`（不是 `.ts`）——TS 遇到 `.ts` 里的尖括号会把它当成「类型断言」语法报错；
+2. `onClick` 用驼峰（不是 HTML 的 `onclick`），值是**函数**而不是字符串——这是「属性是 JS 表达式」的体现；
+3. `{n}` 是「JSX 表达式插值」：花括号里可以放任何 JS 表达式，编译后会被作为子节点插入。
+
+> 💡 **TS 知识点：`.tsx` 里的尖括号歧义**
+> 同样一个 `<Foo>`，在 `.tsx` 里是 JSX 标签，在 `.ts` 里会被当成类型断言 `value as Foo` 的旧式写法。这也是为什么 JSX 必须放 `.tsx` 文件——让编译器明确切换到「JSX 模式」，避免歧义。本仓库 ui 包的 tsconfig 里 `include` 用了 `src/**/*.tsx` 显式 glob，就是为了把这些 JSX 文件稳定纳入工程。
 
 ## 桌面（`packages/desktop`）
 
